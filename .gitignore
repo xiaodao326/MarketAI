@@ -1,0 +1,69 @@
+# ==================================
+# Java
+# ==================================
+*.class
+*.jar
+*.war
+*.ear
+*.log
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ==================================
+# Node / Frontend
+# ==================================
+node_modules/
+dist/
+.nuxt/
+.output/
+.vite/
+*.local
+
+# ==================================
+# IDE
+# ==================================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*.swn
+*~
+
+# ==================================
+# OS
+# ==================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==================================
+# Environment & Secrets
+# ==================================
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.keystore
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# ==================================
+# Docker
+# ==================================
+docker-compose.override.yml
+
+# ==================================
+# Misc
+# ==================================
+*.tmp
+.cache/
+coverage/

@@ -1,0 +1,14 @@
+# ==================================
+# MarketAI Backend — 开发模式
+# 使用 Maven 运行,挂载源码目录实现热更新
+# ==================================
+FROM maven:3.9-eclipse-temurin-17
+
+WORKDIR /app
+
+# 先复制 pom.xml,利用 Docker 缓存下载依赖
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# 源码通过 volume 挂载,无需 COPY
+CMD ["mvn", "spring-boot:run"]

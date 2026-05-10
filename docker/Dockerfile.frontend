@@ -1,0 +1,14 @@
+# ==================================
+# MarketAI Frontend — 开发模式
+# 使用 Vite 开发服务器,HMR 热更新
+# ==================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 先复制 package.json,利用 Docker 缓存安装依赖
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# 源码通过 volume 挂载,无需 COPY
+CMD ["npm", "run", "dev"]
