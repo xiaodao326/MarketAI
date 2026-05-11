@@ -30,7 +30,10 @@ instance.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('marketai_token')
       localStorage.removeItem('marketai_user')
-      window.location.href = '/login'
+      // 防止重定向循环: 如果已在登录页则不跳转
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },

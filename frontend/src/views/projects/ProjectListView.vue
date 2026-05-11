@@ -81,7 +81,7 @@ function handleCreated(project: Project) {
 
 function goToPage(page: number) { currentPage.value = page; loadProjects() }
 
-onMounted(() => loadProjects())
+onMounted(() => loadProjects().catch(() => {}))
 </script>
 
 <template>

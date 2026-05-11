@@ -21,7 +21,11 @@ function selectProject(id: number) {
 
 onMounted(async () => {
   if (projectStore.projectList.length === 0) {
-    await projectStore.fetchList({ size: 5 })
+    try {
+      await projectStore.fetchList({ size: 5 })
+    } catch {
+      // 静默处理: 401/403 已由 Axios 拦截器统一处理
+    }
   }
 })
 </script>
