@@ -1,6 +1,6 @@
 package com.marketai.backend.config;
 
-import com.marketai.backend.security.JwtAuthFilter;
+import com.marketai.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -27,9 +27,10 @@ public class SecurityConfig {
             .cors(cors -> {})
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 公开端点
+                // 认证接口放行
+                .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                // Swagger / Actuator 放行
                 .requestMatchers(
-                    "/api/v1/auth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-ui.html",
@@ -38,7 +39,7 @@ public class SecurityConfig {
                 // 其余需要认证
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
