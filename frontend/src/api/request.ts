@@ -3,33 +3,33 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { ApiResponse } from '@/types'
 
 const instance: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
 
-// 请求拦截器 — 附加 token
+// 请求拦截器 — 自动附加 token
 instance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('marketai_token')
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
-// 响应拦截器 — 统一错误处理
+// 响应拦截器 — 统一处理业务错误和 401/403
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const { code, message } = response.data
-    if (code !== 200) {
-      console.error(`API Error [${code}]: ${message}`)
-      return Promise.reject(new Error(message))
+    if (code !== 0) {
+      return Promise.reject(new Error(message || '请求失败'))
     }
     return response
   },
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('marketai_token')
+      localStorage.removeItem('marketai_user')
       window.location.href = '/login'
     }
     return Promise.reject(error)
