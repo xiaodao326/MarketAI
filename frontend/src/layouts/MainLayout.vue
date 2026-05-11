@@ -11,6 +11,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/vue/24/outline'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+import ProjectSwitcher from '@/components/project/ProjectSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,7 +84,7 @@ async function handleLogout() {
     <div :class="['flex-1 flex flex-col min-h-screen transition-all duration-300', appStore.sidebarCollapsed ? 'ml-16' : 'ml-60']">
       <!-- 顶部 Header -->
       <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-20">
-        <span class="text-sm text-gray-400">项目切换器（即将上线）</span>
+        <ProjectSwitcher />
 
         <!-- 用户下拉菜单 -->
         <Menu as="div" class="relative">

@@ -20,7 +20,12 @@ public enum ResultCode {
     INVALID_PASSWORD(1003, "密码长度至少8位"),
     INVALID_NICKNAME(1004, "昵称长度2-20个字符"),
     AUTH_FAILED(1005, "账号或密码错误"),
-    TOKEN_INVALID(1006, "Token无效或已过期");
+    TOKEN_INVALID(1006, "Token无效或已过期"),
+
+    // 项目模块 2xxx
+    PROJECT_NOT_FOUND(2001, "项目不存在"),
+    PROJECT_FORBIDDEN(2002, "无权操作该项目"),
+    KEYWORD_LIMIT(2003, "项目关键词总数不能超过20个");
 
     private final int code;
     private final String message;
