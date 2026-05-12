@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.marketai.backend.mapper.DashboardMapper">
+
+    <!--
+        按数据源 + 指标类型 + 日期区间汇总
+        走索引: idx_trend_project_source_metric_date (project_id, source, metric_type, data_date)
+    -->
+    <select id="sumValue" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(value), 0)
+        FROM trend_data
+        WHERE project_id = #{projectId}
+          AND source      = #{source}
+          AND metric_type = #{metricType}
+          AND data_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 活跃关键词数 (项目+时间段内出现过的去重关键词数量) -->
+    <select id="countDistinctKeywords" resultType="long">
+        SELECT COUNT(DISTINCT keyword)
+        FROM trend_data
+        WHERE project_id = #{projectId}
+          AND data_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!--
+        趋势数据: 按日期 + 数据源 + 指标类型聚合，供前端 ECharts 直接渲染
+    -->
+    <select id="selectDailyTotals"
+            resultType="com.marketai.backend.dto.dashboard.DailyMetricDTO">
+        SELECT
+            data_date   AS dataDate,
+            source,
+            metric_type AS metricType,
+            SUM(value)  AS dailyTotal
+        FROM trend_data
+        WHERE project_id = #{projectId}
+          AND data_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY data_date, source, metric_type
+        ORDER BY data_date
+    </select>
+
+    <!--
+        关键词排行: 当前周期与上一周期分列，一次扫描完成
+        走索引: idx_trend_project_source_metric_date (project_id 前缀)
+    -->
+    <select id="selectKeywordRanking"
+            resultType="com.marketai.backend.dto.dashboard.KeywordRankDTO">
+        SELECT
+            keyword,
+            SUM(CASE WHEN data_date BETWEEN #{currentStart} AND #{currentEnd}
+                     THEN value ELSE 0 END) AS currentVolume,
+            SUM(CASE WHEN data_date BETWEEN #{prevStart}    AND #{prevEnd}
+                     THEN value ELSE 0 END) AS prevVolume
+        FROM trend_data
+        WHERE project_id = #{projectId}
+          AND source = 'baidu_index'
+          AND data_date BETWEEN #{prevStart} AND #{currentEnd}
+        GROUP BY keyword
+        ORDER BY currentVolume DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 异常检测原始数据: 取近期逐日、逐关键词明细 -->
+    <select id="selectForAnomalyDetection"
+            resultType="com.marketai.backend.dto.dashboard.DailyMetricDTO">
+        SELECT
+            data_date   AS dataDate,
+            keyword,
+            source,
+            metric_type AS metricType,
+            SUM(value)  AS dailyTotal
+        FROM trend_data
+        WHERE project_id = #{projectId}
+          AND data_date >= #{startDate}
+        GROUP BY data_date, keyword, source, metric_type
+        ORDER BY keyword, source, data_date
+    </select>
+
+</mapper>

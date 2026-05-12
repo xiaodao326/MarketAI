@@ -88,7 +88,7 @@ marketai:
     rate-limit:
       requests-per-minute: 10   # 每用户每分钟最多调用次数
   admin:
-    emails: demo@marketai.com   # 逗号分隔, 允许访问 POST /llm/chat 的管理员邮箱
+    emails: demo@marketai.com,zqcysj@163.com   # 逗号分隔, 允许访问 POST /llm/chat 的管理员邮箱
 
 # 日志
 logging:

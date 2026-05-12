@@ -74,6 +74,11 @@ CREATE TABLE IF NOT EXISTS `trend_data` (
 CREATE UNIQUE INDEX IF NOT EXISTS `uk_trend_data`
     ON `trend_data` (`project_id`, `keyword`(50), `source`, `metric_type`, `data_date`);
 
+-- 仪表盘聚合查询优化索引: sumValue / selectKeywordRanking 走 project_id+source+metric_type+data_date 前缀
+-- EXPLAIN 验证: type=range, key=idx_trend_project_source_metric_date, 无全表扫描
+CREATE INDEX IF NOT EXISTS `idx_trend_project_source_metric_date`
+    ON `trend_data` (`project_id`, `source`, `metric_type`, `data_date`);
+
 -- ============================================================
 -- 4. AI 需求洞察报告表
 -- 存储 AI 模型生成的市场分析报告,包含多维度评分、痛点、机会、风险及行动建议
