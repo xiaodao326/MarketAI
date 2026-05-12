@@ -2,7 +2,7 @@ package com.marketai.backend.ai.datasource.impl;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketai.backend.ai.datasource.DataSourceConnector;
 import com.marketai.backend.ai.datasource.dto.TrendDataPoint;
@@ -16,10 +16,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * 微博热搜连接器
  * 数据来源: https://github.com/justjavac/weibo-trending-hot-search (开源每日快照)
- * 数据格式: [[rank, title, hot_value, url, category], ...]
+ * 数据格式: [{"rank":N,"title":"...","hot":N,"url":"...","category":"..."}, ...]
  * 匹配策略: 标题包含关键词 -> 取最高热度值作为 social_mentions 指标
  */
 @Slf4j
@@ -64,17 +65,27 @@ public class WeiboHotConnector implements DataSourceConnector {
         String url = BASE_URL + date.format(DATE_FMT) + ".json";
         String body = fetchWithRetry(url);
 
-        List<List<Object>> items = objectMapper.readValue(body, new TypeReference<>() {});
+        JsonNode root = objectMapper.readTree(body);
 
         long maxHot = 0;
-        for (List<Object> item : items) {
-            if (item.size() < 3) continue;
-            String title = String.valueOf(item.get(1));
-            if (title.contains(keyword)) {
-                Object hotObj = item.get(2);
-                long hot = hotObj instanceof Number n ? n.longValue()
-                        : Long.parseLong(String.valueOf(hotObj));
-                if (hot > maxHot) maxHot = hot;
+        for (JsonNode item : root) {
+            // 新格式: {"title":"...","hot":N,...}  旧格式: [rank, title, hot, ...]
+            String title;
+            long hot;
+            if (item.isObject()) {
+                JsonNode titleNode = item.get("title");
+                JsonNode hotNode = item.has("hot") ? item.get("hot") : item.get("hot_value");
+                if (titleNode == null || hotNode == null) continue;
+                title = titleNode.asText();
+                hot = hotNode.asLong();
+            } else if (item.isArray() && item.size() >= 3) {
+                title = item.get(1).asText();
+                hot = item.get(2).asLong();
+            } else {
+                continue;
+            }
+            if (title.contains(keyword) && hot > maxHot) {
+                maxHot = hot;
             }
         }
 
@@ -126,7 +137,7 @@ public class WeiboHotConnector implements DataSourceConnector {
         try {
             String url = BASE_URL + LocalDate.now().minusDays(2).format(DATE_FMT) + ".json";
             String body = HttpRequest.get(url).timeout(5000).execute().body();
-            return body != null && body.startsWith("[");
+            return body != null && !body.isBlank() && objectMapper.readTree(body).isArray();
         } catch (Exception e) {
             log.warn("[微博热搜] 健康检查失败: {}", e.getMessage());
             return false;
