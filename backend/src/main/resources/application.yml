@@ -69,10 +69,26 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# 数据采集配置
+# MarketAI 业务配置
 marketai:
   datasource:
     collect-interval-hours: 6  # 定时采集间隔, 对应 cron "0 0 */6 * * *"
+  ai:
+    provider: deepseek          # 当前激活的 LLM: deepseek / qwen / glm
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com/v1
+      model: deepseek-chat      # deepseek-chat(通用) / deepseek-reasoner(深度推理)
+    qwen:
+      api-key: ${QWEN_API_KEY:}
+      model: qwen-plus          # qwen-plus / qwen-max
+    glm:
+      api-key: ${GLM_API_KEY:}
+      model: glm-4-plus         # glm-4-plus / glm-4-flash
+    rate-limit:
+      requests-per-minute: 10   # 每用户每分钟最多调用次数
+  admin:
+    emails: demo@marketai.com   # 逗号分隔, 允许访问 POST /llm/chat 的管理员邮箱
 
 # 日志
 logging:
