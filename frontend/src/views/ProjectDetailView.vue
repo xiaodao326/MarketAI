@@ -12,7 +12,7 @@ const projectStore = useProjectStore()
 
 const project = ref<Project | null>(null)
 const loading = ref(true)
-const activeTab = ref('dashboard')
+const activeTab = ref('insight')
 const showEditModal = ref(false)
 
 const id = computed(() => Number(route.params.id))
@@ -113,7 +113,7 @@ onMounted(() => loadProject())
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          @click="activeTab = tab.key"
+          @click="tab.key === 'dashboard' ? router.push(`/projects/${id}/dashboard`) : (activeTab = tab.key)"
           :class="[
             'inline-flex items-center gap-2 px-1 py-3 text-sm font-medium border-b-2 transition-colors',
             activeTab === tab.key

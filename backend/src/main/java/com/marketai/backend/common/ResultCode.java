@@ -25,7 +25,12 @@ public enum ResultCode {
     // 项目模块 2xxx
     PROJECT_NOT_FOUND(2001, "项目不存在"),
     PROJECT_FORBIDDEN(2002, "无权操作该项目"),
-    KEYWORD_LIMIT(2003, "项目关键词总数不能超过20个");
+    KEYWORD_LIMIT(2003, "项目关键词总数不能超过20个"),
+
+    // 洞察分析模块 3xxx
+    INSIGHT_TASK_NOT_FOUND(3001, "分析任务不存在"),
+    INSIGHT_REPORT_NOT_FOUND(3002, "洞察报告不存在"),
+    INSIGHT_TASK_LIMIT(429, "并发分析任务已达上限(3个)，请等待当前任务完成后再提交");
 
     private final int code;
     private final String message;

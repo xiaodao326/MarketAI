@@ -38,6 +38,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '项目详情', requiresAuth: true },
   },
   {
+    path: '/projects/:id/dashboard',
+    name: 'project-dashboard',
+    component: () => import('@/views/dashboard/DashboardView.vue'),
+    meta: { title: '趋势仪表盘', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),

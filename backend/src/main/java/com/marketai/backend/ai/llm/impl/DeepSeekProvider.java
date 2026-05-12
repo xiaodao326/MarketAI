@@ -47,7 +47,7 @@ public class DeepSeekProvider implements LLMProvider {
             @Value("${marketai.ai.deepseek.api-key:}") String apiKey,
             @Value("${marketai.ai.deepseek.model:deepseek-chat}") String model,
             ObjectMapper objectMapper) {
-        this(baseUrl, apiKey, model, buildClient(30), objectMapper, 1000L);
+        this(baseUrl, apiKey, model, buildClient(60), objectMapper, 1000L);
     }
 
     /** 测试专用构造器: 可注入自定义 OkHttpClient 和重试延迟 */
