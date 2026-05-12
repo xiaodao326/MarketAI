@@ -14,5 +14,5 @@ import java.util.List;
 public class TrendSeriesVO {
     private String name;
     private List<Long> data;
-    private int yAxisIndex;
+    private int yaxisIndex;
 }

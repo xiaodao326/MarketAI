@@ -74,8 +74,8 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDate prevEnd   = curStart.minusDays(1);
         LocalDate prevStart = prevEnd.minusDays(days - 1L);
 
-        BigDecimal curSearch  = dashboardMapper.sumValue(projectId, "baidu_index", "search_index",    curStart, today);
-        BigDecimal prevSearch = dashboardMapper.sumValue(projectId, "baidu_index", "search_index",    prevStart, prevEnd);
+        BigDecimal curSearch  = dashboardMapper.sumValue(projectId, "baidu_index", "search_volume",    curStart, today);
+        BigDecimal prevSearch = dashboardMapper.sumValue(projectId, "baidu_index", "search_volume",    prevStart, prevEnd);
         BigDecimal curSocial  = dashboardMapper.sumValue(projectId, "weibo",       "social_mentions", curStart, today);
         BigDecimal prevSocial = dashboardMapper.sumValue(projectId, "weibo",       "social_mentions", prevStart, prevEnd);
 
@@ -122,9 +122,9 @@ public class DashboardServiceImpl implements DashboardService {
             series.add(TrendSeriesVO.builder()
                 .name("搜索热度")
                 .data(dates.stream()
-                    .map(d -> lookup.getOrDefault(d + "|baidu_index|search_index", 0L))
+                    .map(d -> lookup.getOrDefault(d + "|baidu_index|search_volume", 0L))
                     .collect(Collectors.toList()))
-                .yAxisIndex(0).build());
+                .yaxisIndex(0).build());
         }
 
         if (requested.contains("social")) {
@@ -133,18 +133,18 @@ public class DashboardServiceImpl implements DashboardService {
                 .data(dates.stream()
                     .map(d -> lookup.getOrDefault(d + "|weibo|social_mentions", 0L))
                     .collect(Collectors.toList()))
-                .yAxisIndex(0).build());
+                .yaxisIndex(0).build());
         }
 
         if (requested.contains("sentiment")) {
             // 情感值 = 归一化搜索量映射到 [40, 100]，使用独立 Y 轴
             List<Long> searchVals = dates.stream()
-                .map(d -> lookup.getOrDefault(d + "|baidu_index|search_index", 0L))
+                .map(d -> lookup.getOrDefault(d + "|baidu_index|search_volume", 0L))
                 .collect(Collectors.toList());
             series.add(TrendSeriesVO.builder()
                 .name("情感值")
                 .data(deriveSentiment(searchVals))
-                .yAxisIndex(1).build());
+                .yaxisIndex(1).build());
         }
 
         return TrendDataVO.builder().dates(dates).series(series).build();
