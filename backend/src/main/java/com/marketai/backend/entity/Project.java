@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("projects")
+@TableName(value = "projects", autoResultMap = true)
 public class Project {
 
     @TableId(type = IdType.AUTO)

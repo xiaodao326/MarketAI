@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.marketai.backend.mapper.TrendDataMapper">
+
+    <!--
+        INSERT IGNORE: 命中 uk_trend_data 唯一索引时静默跳过, 避免重复采集写入
+        唯一键: (project_id, keyword, source, metric_type, data_date)
+    -->
+    <insert id="insertIgnoreBatch">
+        INSERT IGNORE INTO trend_data
+            (project_id, keyword, source, metric_type, value, data_date, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.projectId}, #{item.keyword}, #{item.source}, #{item.metricType},
+             #{item.value}, #{item.dataDate}, #{item.createdAt})
+        </foreach>
+    </insert>
+
+</mapper>

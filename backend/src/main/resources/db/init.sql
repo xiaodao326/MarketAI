@@ -69,6 +69,11 @@ CREATE TABLE IF NOT EXISTS `trend_data` (
     CONSTRAINT `fk_trend_data_project_id` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='市场趋势时序数据表';
 
+-- 防止重复采集: (项目, 关键词, 数据源, 指标类型, 日期) 五元组唯一
+-- 配合 INSERT IGNORE 实现幂等写入 (continue-on-error: true 保证已存在索引时不报错)
+CREATE UNIQUE INDEX IF NOT EXISTS `uk_trend_data`
+    ON `trend_data` (`project_id`, `keyword`(50), `source`, `metric_type`, `data_date`);
+
 -- ============================================================
 -- 4. AI 需求洞察报告表
 -- 存储 AI 模型生成的市场分析报告,包含多维度评分、痛点、机会、风险及行动建议
