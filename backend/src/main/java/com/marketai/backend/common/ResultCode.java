@@ -30,7 +30,13 @@ public enum ResultCode {
     // 洞察分析模块 3xxx
     INSIGHT_TASK_NOT_FOUND(3001, "分析任务不存在"),
     INSIGHT_REPORT_NOT_FOUND(3002, "洞察报告不存在"),
-    INSIGHT_TASK_LIMIT(429, "并发分析任务已达上限(3个)，请等待当前任务完成后再提交");
+    INSIGHT_TASK_LIMIT(429, "并发分析任务已达上限(3个)，请等待当前任务完成后再提交"),
+
+    // 用户画像模块 4xxx
+    PERSONA_NOT_FOUND(4001, "用户画像不存在"),
+    PERSONA_TASK_NOT_FOUND(4002, "画像生成任务不存在"),
+    PERSONA_TASK_LIMIT(4003, "并发画像生成任务已达上限(3个)，请稍后再试"),
+    PERSONA_COUNT_INVALID(4004, "生成数量应在 3-5 之间");
 
     private final int code;
     private final String message;

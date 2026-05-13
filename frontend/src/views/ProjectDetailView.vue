@@ -51,8 +51,9 @@ const features = computed<FeatureCard[]>(() => [
   },
   {
     key: 'persona', label: '用户画像',
-    desc: '基于社交数据自动聚类目标用户群体特征(开发中)',
-    icon: UserGroupIcon, available: false,
+    desc: 'AI 自动生成 3-5 个目标用户画像,含决策参数与代表性引言',
+    icon: UserGroupIcon, available: true,
+    route: `/projects/${id.value}/personas`,
     bg: 'bg-purple-50 dark:bg-purple-900/20', iconCls: 'text-purple-500',
   },
   {

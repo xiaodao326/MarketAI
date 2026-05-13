@@ -1,0 +1,38 @@
+你是资深的用户研究专家。请为以下产品生成 {{count}} 个真实可信的目标用户画像。
+
+产品: {{productDescription}}
+行业: {{industry}}
+目标市场: {{targetMarket}}
+监控关键词: {{keywords}}
+{{insightContextSection}}{{extraContextSection}}
+要求:
+- 每个画像必须有真实感的细节(姓名/职位/年龄/痛点/引言),避免模板化和泛泛而谈
+- 引言要像真实用户说的话,带情绪和具体场景,不要"我希望..."这种空话
+- 各画像的 marketShare 总和约等于 100,且数值合理(主流人群 30-50,长尾 5-15)
+- 恰好将 1 个画像标记为 isPrimary=true (最有商业价值的那个),其余为 false
+- 所有内容用中文输出
+
+严格按以下 JSON 数组格式输出,不要包含任何其他文字、注释或 markdown 代码块标记:
+
+[
+  {
+    "name": "中文姓名",
+    "role": "具体职位 + 公司类型/规模, 如: 中型 SaaS 公司产品经理",
+    "ageRange": "30-40 岁",
+    "marketShare": 0到100之间的整数,
+    "isPrimary": true 或 false,
+    "goals": ["目标1", "目标2", "目标3"],
+    "painPoints": [
+      { "title": "痛点标题(15字内)", "description": "详细描述(50字内,有具体场景)" }
+    ],
+    "quote": "代表这个画像内心真实想法的一句话(30-60字)",
+    "decisionParams": {
+      "paymentWillingness": "high 或 medium 或 low",
+      "decisionCycle": "1-2 周 或 2-4 周 或 2-6 月",
+      "budgetRange": "0.5-2 万/年 或 3-8 万/年 或 10-50 万/年",
+      "techCapability": "high 或 medium 或 low"
+    }
+  }
+]
+
+数组长度必须严格等于 {{count}}。
