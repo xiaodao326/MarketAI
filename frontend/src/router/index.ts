@@ -56,6 +56,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '用户画像', requiresAuth: true },
   },
   {
+    path: '/projects/:id/competitors',
+    name: 'project-competitors',
+    component: () => import('@/views/competitors/CompetitorView.vue'),
+    meta: { title: '竞品分析', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),

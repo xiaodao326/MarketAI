@@ -58,8 +58,9 @@ const features = computed<FeatureCard[]>(() => [
   },
   {
     key: 'competitor', label: '竞品分析',
-    desc: '跟踪竞品功能迭代、用户反馈与差异化机会(开发中)',
-    icon: BuildingOffice2Icon, available: false,
+    desc: 'AI 生成功能对比矩阵 + 差异化建议,帮你找到市场切入点',
+    icon: BuildingOffice2Icon, available: true,
+    route: `/projects/${id.value}/competitors`,
     bg: 'bg-emerald-50 dark:bg-emerald-900/20', iconCls: 'text-emerald-500',
   },
 ])

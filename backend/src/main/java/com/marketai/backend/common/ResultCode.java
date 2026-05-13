@@ -36,7 +36,13 @@ public enum ResultCode {
     PERSONA_NOT_FOUND(4001, "用户画像不存在"),
     PERSONA_TASK_NOT_FOUND(4002, "画像生成任务不存在"),
     PERSONA_TASK_LIMIT(4003, "并发画像生成任务已达上限(3个)，请稍后再试"),
-    PERSONA_COUNT_INVALID(4004, "生成数量应在 3-5 之间");
+    PERSONA_COUNT_INVALID(4004, "生成数量应在 3-5 之间"),
+
+    // 竞品分析模块 5xxx
+    COMPETITOR_NOT_FOUND(5001, "竞品不存在"),
+    COMPETITOR_TASK_NOT_FOUND(5002, "竞品分析任务不存在"),
+    COMPETITOR_TASK_LIMIT(5003, "并发竞品分析任务已达上限(3个)，请稍后再试"),
+    COMPETITOR_LIST_EMPTY(5004, "项目尚未配置竞品名单，请先在项目设置中添加竞品");
 
     private final int code;
     private final String message;
