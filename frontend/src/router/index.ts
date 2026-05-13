@@ -44,6 +44,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '趋势仪表盘', requiresAuth: true },
   },
   {
+    path: '/projects/:id/insights',
+    name: 'project-insights',
+    component: () => import('@/views/insights/InsightView.vue'),
+    meta: { title: 'AI 需求洞察', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),

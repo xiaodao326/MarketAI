@@ -2,9 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
-import { ArrowLeftIcon, PencilIcon, TrashIcon, Cog6ToothIcon, ChartBarIcon, LightBulbIcon, UserGroupIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline'
+import {
+  ArrowLeftIcon, PencilIcon, TrashIcon,
+  ChartBarIcon, LightBulbIcon, UserGroupIcon, BuildingOffice2Icon,
+  ArrowRightIcon,
+} from '@heroicons/vue/24/outline'
 import ProjectEditModal from './projects/ProjectEditModal.vue'
 import type { Project } from '@/types/project'
+import type { Component } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,17 +17,51 @@ const projectStore = useProjectStore()
 
 const project = ref<Project | null>(null)
 const loading = ref(true)
-const activeTab = ref('insight')
 const showEditModal = ref(false)
 
 const id = computed(() => Number(route.params.id))
 
-const tabs = [
-  { key: 'dashboard', label: '趋势仪表盘', icon: ChartBarIcon },
-  { key: 'insight', label: 'AI 洞察', icon: LightBulbIcon },
-  { key: 'persona', label: '用户画像', icon: UserGroupIcon },
-  { key: 'competitor', label: '竞品分析', icon: BuildingOffice2Icon },
-]
+// 功能卡片配置 — available=true 才可点击进入,false 仅展示"敬请期待"
+interface FeatureCard {
+  key: string
+  label: string
+  desc: string
+  icon: Component
+  available: boolean
+  route?: string
+  // tailwind 颜色对 — 用于 icon 背景与悬停效果区分
+  bg: string
+  iconCls: string
+}
+
+const features = computed<FeatureCard[]>(() => [
+  {
+    key: 'dashboard', label: '趋势仪表盘',
+    desc: '搜索热度、社媒讨论、竞品活跃度等核心指标的实时趋势',
+    icon: ChartBarIcon, available: true,
+    route: `/projects/${id.value}/dashboard`,
+    bg: 'bg-blue-50 dark:bg-blue-900/20', iconCls: 'text-blue-500',
+  },
+  {
+    key: 'insight', label: 'AI 需求洞察',
+    desc: '一键生成痛点、机会、风险、行动建议的结构化分析报告',
+    icon: LightBulbIcon, available: true,
+    route: `/projects/${id.value}/insights`,
+    bg: 'bg-amber-50 dark:bg-amber-900/20', iconCls: 'text-amber-500',
+  },
+  {
+    key: 'persona', label: '用户画像',
+    desc: '基于社交数据自动聚类目标用户群体特征(开发中)',
+    icon: UserGroupIcon, available: false,
+    bg: 'bg-purple-50 dark:bg-purple-900/20', iconCls: 'text-purple-500',
+  },
+  {
+    key: 'competitor', label: '竞品分析',
+    desc: '跟踪竞品功能迭代、用户反馈与差异化机会(开发中)',
+    icon: BuildingOffice2Icon, available: false,
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20', iconCls: 'text-emerald-500',
+  },
+])
 
 const statusBadge = (status: number) => {
   switch (status) {
@@ -64,11 +103,18 @@ function handleUpdated(updated: Project) {
   showEditModal.value = false
 }
 
+function openFeature(f: FeatureCard) {
+  if (f.available && f.route) router.push(f.route)
+}
+
 onMounted(() => loadProject())
 </script>
 
 <template>
-  <div v-if="loading" class="flex justify-center py-20">
+  <div
+    v-if="loading"
+    class="flex justify-center py-20"
+  >
     <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
   </div>
 
@@ -77,7 +123,10 @@ onMounted(() => loadProject())
     <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
       <div class="flex items-start justify-between">
         <div class="flex items-start gap-4">
-          <button @click="router.push('/projects')" class="mt-0.5 p-1 text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            class="mt-0.5 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            @click="router.push('/projects')"
+          >
             <ArrowLeftIcon class="w-5 h-5" />
           </button>
           <div>
@@ -85,7 +134,10 @@ onMounted(() => loadProject())
               <h1 class="text-xl font-semibold text-gray-900">{{ project.name }}</h1>
               <span :class="['px-2.5 py-0.5 text-xs font-medium rounded-full', statusBadge(project.status).cls]">{{ statusBadge(project.status).label }}</span>
             </div>
-            <p v-if="project.description" class="text-sm text-gray-500 mb-3">{{ project.description }}</p>
+            <p
+              v-if="project.description"
+              class="text-sm text-gray-500 mb-3"
+            >{{ project.description }}</p>
             <div class="flex items-center gap-2 flex-wrap">
               <span :class="['px-2.5 py-0.5 text-xs rounded-full', industryLabels[project.industry] || 'bg-gray-100 text-gray-700']">{{ project.industry }}</span>
               <span class="text-xs text-gray-400">{{ project.targetMarket }}</span>
@@ -97,41 +149,73 @@ onMounted(() => loadProject())
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="showEditModal = true" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="编辑"><PencilIcon class="w-4 h-4" /></button>
-          <button @click="handleArchive" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="归档"><TrashIcon class="w-4 h-4" /></button>
+          <button
+            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="编辑"
+            @click="showEditModal = true"
+          ><PencilIcon class="w-4 h-4" /></button>
+          <button
+            class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="归档"
+            @click="handleArchive"
+          ><TrashIcon class="w-4 h-4" /></button>
         </div>
       </div>
       <!-- 关键词标签 -->
       <div class="flex flex-wrap gap-1.5 mt-4 ml-9">
-        <span v-for="kw in project.keywords" :key="kw" class="px-2.5 py-1 bg-primary-50 text-primary-700 text-xs rounded-full">{{ kw }}</span>
+        <span
+          v-for="kw in project.keywords"
+          :key="kw"
+          class="px-2.5 py-1 bg-primary-50 text-primary-700 text-xs rounded-full"
+        >{{ kw }}</span>
       </div>
     </div>
 
-    <!-- Tab 导航 -->
-    <div class="border-b border-gray-200 mb-6">
-      <nav class="flex gap-6 -mb-px">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="tab.key === 'dashboard' ? router.push(`/projects/${id}/dashboard`) : (activeTab = tab.key)"
-          :class="[
-            'inline-flex items-center gap-2 px-1 py-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-          ]"
-        >
-          <component :is="tab.icon" class="w-4 h-4" />
-          {{ tab.label }}
-        </button>
-      </nav>
+    <!-- 功能卡片网格 -->
+    <div class="mb-3">
+      <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400">功能模块</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <button
+        v-for="f in features"
+        :key="f.key"
+        :disabled="!f.available"
+        :class="[
+          'group flex items-start gap-4 p-5 rounded-xl border bg-white dark:bg-gray-800 text-left transition-all',
+          f.available
+            ? 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md cursor-pointer'
+            : 'border-gray-200 dark:border-gray-700 opacity-60 cursor-not-allowed',
+        ]"
+        @click="openFeature(f)"
+      >
+        <div :class="['w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0', f.bg]">
+          <component
+            :is="f.icon"
+            :class="['w-6 h-6', f.iconCls]"
+          />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <h3 class="text-base font-medium text-gray-900 dark:text-white">{{ f.label }}</h3>
+            <span
+              v-if="!f.available"
+              class="px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded"
+            >敬请期待</span>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{{ f.desc }}</p>
+        </div>
+        <ArrowRightIcon
+          v-if="f.available"
+          class="w-4 h-4 text-gray-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1"
+        />
+      </button>
     </div>
 
-    <!-- Tab 内容 -->
-    <div class="rounded-lg border-2 border-dashed border-gray-300 p-16 text-center">
-      <component :is="tabs.find(t => t.key === activeTab)?.icon || Cog6ToothIcon" class="w-10 h-10 text-gray-400 mx-auto mb-3" />
-      <p class="text-gray-500 text-sm">{{ tabs.find(t => t.key === activeTab)?.label }}功能开发中，敬请期待</p>
-    </div>
-    <ProjectEditModal v-if="showEditModal && project" :project="project" @close="showEditModal = false" @updated="handleUpdated" />
+    <ProjectEditModal
+      v-if="showEditModal && project"
+      :project="project"
+      @close="showEditModal = false"
+      @updated="handleUpdated"
+    />
   </template>
 </template>
