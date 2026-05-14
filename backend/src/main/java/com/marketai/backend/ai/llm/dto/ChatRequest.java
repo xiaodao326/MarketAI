@@ -1,5 +1,6 @@
 package com.marketai.backend.ai.llm.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,27 +8,25 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * AI 对话请求
- * 使用 @NoArgsConstructor + 字段默认值, Jackson 反序列化时缺省字段自动取默认值
- */
+@Schema(description = "AI 对话请求")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatRequest {
 
+    @Schema(description = "对话消息列表")
     private List<Message> messages = new ArrayList<>();
 
-    /** 生成随机性, 0~1, 默认 0.7 */
+    @Schema(description = "生成随机性, 0~1", example = "0.7")
     private Double temperature = 0.7;
 
-    /** 最大输出 token 数, 默认 4000 */
+    @Schema(description = "最大输出 token 数", example = "4000")
     private Integer maxTokens = 4000;
 
-    /** 是否开启 JSON Mode (要求模型输出合法 JSON) */
+    @Schema(description = "是否开启 JSON Mode")
     private Boolean jsonMode = false;
 
-    /** JSON Schema 提示 (可选), 告知模型期望的 JSON 结构 */
+    @Schema(description = "JSON Schema 提示 (可选), 告知模型期望的 JSON 结构")
     private String responseSchema;
 
     /** 便捷构造: 单条 user 消息 */

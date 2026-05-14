@@ -76,12 +76,13 @@ marketai:
   ai:
     provider: deepseek          # 当前激活的 LLM: deepseek / qwen / glm
     deepseek:
-      api-key: ${DEEPSEEK_API_KEY:}
+      api-key: ${DEEPSEEK_API_KEY:sk-48dc2ab656434ed9be572d8962f76a56}
       base-url: https://api.deepseek.com/v1
       model: deepseek-chat      # deepseek-chat(通用) / deepseek-reasoner(深度推理)
     qwen:
       api-key: ${QWEN_API_KEY:}
-      model: qwen-plus          # qwen-plus / qwen-max
+      model: qwen-plus
+      # qwen-plus / qwen-max载入
     glm:
       api-key: ${GLM_API_KEY:}
       model: glm-4-plus         # glm-4-plus / glm-4-flash
@@ -90,8 +91,14 @@ marketai:
   admin:
     emails: demo@marketai.com,zqcysj@163.com   # 逗号分隔, 允许访问 POST /llm/chat 的管理员邮箱
 
+# CORS 配置 (逗号分隔, * 表示允许全部)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
 # 日志
 logging:
+  file:
+    path: ${LOG_PATH:logs}
   level:
     com.marketai.backend: DEBUG
     org.springframework.security: INFO

@@ -1,26 +1,35 @@
+# ==================================
+# MarketAI — 生产部署配置
+# 启动: docker compose -f docker/docker-compose.yml up -d
+# 停止: docker compose -f docker/docker-compose.yml down
+# ==================================
+
 services:
   mysql:
     image: mysql:8.0
     container_name: marketai-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: marketai
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-13306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d  # 初始化 SQL 脚本
+      - ./mysql/init:/docker-entrypoint-initdb.d
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    networks:
+      - marketai-net
 
   redis:
     image: redis:7-alpine
@@ -30,18 +39,23 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 10s
+    networks:
+      - marketai-net
 
-  # 后端开发模式 — 挂载源码目录实现热更新 (需 IDE 支持)
   backend:
     build:
       context: ../backend
-      dockerfile: ../docker/Dockerfile.backend
+      dockerfile: Dockerfile
     container_name: marketai-backend
     restart: unless-stopped
     ports:
@@ -49,36 +63,39 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/marketai?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
       SPRING_DATA_REDIS_HOST: redis
-      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GLM_API_KEY: ${GLM_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-deepseek}
+      SPRING_PROFILES_ACTIVE: prod
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ../backend/src:/app/src         # 源码热更新
-      - ../backend/pom.xml:/app/pom.xml
-      - backend_m2:/root/.m2            # Maven 本地仓库缓存
+    networks:
+      - marketai-net
 
-  # 前端开发模式 — Vite HMR
   frontend:
     build:
       context: ../frontend
-      dockerfile: ../docker/Dockerfile.frontend
+      dockerfile: Dockerfile
     container_name: marketai-frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      VITE_API_BASE: http://localhost:8080
+      - "80:80"
     depends_on:
       - backend
-    volumes:
-      - ../frontend/src:/app/src        # 源码热更新
-      - ../frontend/public:/app/public
-      - ../frontend/index.html:/app/index.html
+    networks:
+      - marketai-net
 
 volumes:
   mysql_data:
   redis_data:
-  backend_m2:
+
+networks:
+  marketai-net:
+    driver: bridge

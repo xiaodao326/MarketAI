@@ -1,0 +1,16 @@
+# ==================================
+# MarketAI — 生产环境配置
+# 激活方式: SPRING_PROFILES_ACTIVE=prod
+# ==================================
+
+# 日志: 生产环境降为 INFO
+logging:
+  level:
+    com.marketai.backend: INFO
+    org.springframework.security: WARN
+
+# 生产环境关闭自动 DDL, 避免误操作
+spring:
+  sql:
+    init:
+      mode: never
