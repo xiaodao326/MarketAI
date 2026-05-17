@@ -12,15 +12,26 @@ const props = defineProps<{
 const chartEl = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
 
-// 系列名 → 颜色映射（与设计稿一致）
+// 新设计系统色 — 与 brand/accent/warning 对齐
 const COLORS: Record<string, string> = {
-  '搜索热度': '#378ADD',
-  '社媒讨论': '#1D9E75',
-  '情感值': '#BA7517',
+  '搜索热度': '#6366F1', // brand-500
+  '社媒讨论': '#06B6D4', // cyan-500
+  '情感值':   '#F59E0B', // amber-500
+}
+
+function isDark() {
+  return document.documentElement.classList.contains('dark')
 }
 
 function buildOption(): EChartsCoreOption {
   const showZoom = props.timeRange !== '7d'
+  const dark = isDark()
+  const axisColor = dark ? '#A1A1AA' : '#71717A'
+  const splitColor = dark ? '#27272A' : '#F4F4F5'
+  const borderColor = dark ? '#27272A' : '#E4E4E7'
+  const bgColor = dark ? 'rgba(26, 26, 30, 0.95)' : 'rgba(255,255,255,0.96)'
+  const textColor = dark ? '#FAFAFA' : '#27272A'
+
   return {
     backgroundColor: 'transparent',
     grid: { top: 30, right: 30, bottom: showZoom ? 62 : 30, left: 50 },
@@ -28,15 +39,15 @@ function buildOption(): EChartsCoreOption {
       type: 'category',
       data: props.trendData.dates,
       boundaryGap: false,
-      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisLine: { lineStyle: { color: borderColor } },
       axisTick: { show: false },
-      axisLabel: { color: '#6b7280', fontSize: 11 },
+      axisLabel: { color: axisColor, fontSize: 11 },
     },
     yAxis: [
       {
         type: 'value',
-        axisLabel: { color: '#6b7280', fontSize: 11 },
-        splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+        axisLabel: { color: axisColor, fontSize: 11 },
+        splitLine: { lineStyle: { color: splitColor, type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
       },
@@ -44,7 +55,7 @@ function buildOption(): EChartsCoreOption {
         type: 'value',
         min: 0,
         max: 100,
-        axisLabel: { color: '#6b7280', fontSize: 11, formatter: '{value}%' },
+        axisLabel: { color: axisColor, fontSize: 11, formatter: '{value}%' },
         splitLine: { show: false },
         axisLine: { show: false },
         axisTick: { show: false },
@@ -52,10 +63,12 @@ function buildOption(): EChartsCoreOption {
     ],
     tooltip: {
       trigger: 'axis',
-      axisPointer: { type: 'cross', crossStyle: { color: '#d1d5db' } },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e5e7eb',
-      textStyle: { color: '#374151', fontSize: 12 },
+      axisPointer: { type: 'cross', crossStyle: { color: borderColor } },
+      backgroundColor: bgColor,
+      borderColor: borderColor,
+      textStyle: { color: textColor, fontSize: 12 },
+      padding: [8, 12],
+      extraCssText: 'border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);',
     },
     dataZoom: showZoom
       ? [
@@ -66,10 +79,12 @@ function buildOption(): EChartsCoreOption {
             end: 100,
             bottom: 5,
             height: 18,
-            borderColor: '#e5e7eb',
-            fillerColor: 'rgba(55,138,221,0.1)',
-            handleStyle: { color: '#378ADD' },
-            textStyle: { color: '#6b7280', fontSize: 10 },
+            borderColor: borderColor,
+            backgroundColor: 'transparent',
+            fillerColor: 'rgba(99,102,241,0.10)',
+            handleStyle: { color: '#6366F1' },
+            moveHandleStyle: { color: '#6366F1' },
+            textStyle: { color: axisColor, fontSize: 10 },
           },
         ]
       : [],
@@ -87,7 +102,7 @@ function buildOption(): EChartsCoreOption {
       lineStyle: {
         color: COLORS[s.name] ?? '#999',
         type: s.name === '情感值' ? 'dashed' : 'solid',
-        width: 2,
+        width: 2.5,
       },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -99,12 +114,13 @@ function buildOption(): EChartsCoreOption {
   }
 }
 
-function resize() {
-  chart?.resize()
-}
+function resize() { chart?.resize() }
+function rerender() { chart?.setOption(buildOption()) }
 
-watch(() => props.trendData, () => chart?.setOption(buildOption()), { deep: true })
-watch(() => props.timeRange, () => chart?.setOption(buildOption()))
+watch(() => props.trendData, rerender, { deep: true })
+watch(() => props.timeRange, rerender)
+
+let themeObserver: MutationObserver | null = null
 
 onMounted(() => {
   if (chartEl.value) {
@@ -112,32 +128,39 @@ onMounted(() => {
     chart.setOption(buildOption())
   }
   window.addEventListener('resize', resize)
+  // 监听 dark class 变化以同步主题
+  themeObserver = new MutationObserver(rerender)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', resize)
+  themeObserver?.disconnect()
   chart?.dispose()
   chart = null
 })
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
-    <!-- 自定义图例（SVG 折线 + 标签） -->
-    <div class="flex items-center gap-6 mb-2">
-      <div v-for="s in trendData.series" :key="s.name" class="flex items-center gap-2">
-        <svg width="24" height="12" class="flex-shrink-0">
-          <line
-            x1="0" y1="6" x2="24" y2="6"
-            :stroke="COLORS[s.name] ?? '#999'"
-            stroke-width="2"
-            :stroke-dasharray="s.name === '情感值' ? '4 2' : 'none'"
-          />
-          <circle cx="12" cy="6" r="2.5" :fill="COLORS[s.name] ?? '#999'" />
-        </svg>
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ s.name }}</span>
+  <div class="rounded-xl bg-[color:var(--color-surface)] border border-[color:var(--color-border)] shadow-card p-5">
+    <!-- 图例 -->
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-3">
+      <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">趋势走势</h3>
+      <div class="flex items-center gap-4">
+        <div v-for="s in trendData.series" :key="s.name" class="flex items-center gap-1.5">
+          <svg width="20" height="10" class="flex-shrink-0">
+            <line
+              x1="0" y1="5" x2="20" y2="5"
+              :stroke="COLORS[s.name] ?? '#999'"
+              stroke-width="2"
+              :stroke-dasharray="s.name === '情感值' ? '3 2' : 'none'"
+            />
+            <circle cx="10" cy="5" r="2.5" :fill="COLORS[s.name] ?? '#999'" />
+          </svg>
+          <span class="text-xs text-neutral-600 dark:text-neutral-300">{{ s.name }}</span>
+        </div>
       </div>
     </div>
-    <div ref="chartEl" style="height: 280px; width: 100%;" />
+    <div ref="chartEl" style="height: 300px; width: 100%;" />
   </div>
 </template>

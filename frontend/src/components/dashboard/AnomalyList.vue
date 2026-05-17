@@ -1,49 +1,72 @@
 <script setup lang="ts">
 import type { Anomaly } from '@/types/dashboard'
+import { ExclamationTriangleIcon, ShieldExclamationIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 
 defineProps<{
   anomalies: Anomaly[]
 }>()
 
-const SEVERITY_DOT: Record<string, string> = {
-  critical: 'bg-red-500',
-  warning: 'bg-amber-500',
-  opportunity: 'bg-green-500',
-}
-
-const SEVERITY_BADGE: Record<string, string> = {
-  critical: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400',
-  warning: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
-  opportunity: 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400',
-}
-
-const SEVERITY_LABELS: Record<string, string> = {
-  critical: '严重',
-  warning: '警告',
-  opportunity: '机会',
+const SEVERITY_META: Record<string, { icon: typeof ExclamationTriangleIcon; label: string; iconCls: string; bgCls: string; badgeCls: string }> = {
+  critical: {
+    icon: ShieldExclamationIcon,
+    label: '严重',
+    iconCls: 'text-red-500',
+    bgCls: 'bg-red-50 dark:bg-red-500/12 ring-red-200 dark:ring-red-700/40',
+    badgeCls: 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300',
+  },
+  warning: {
+    icon: ExclamationTriangleIcon,
+    label: '警告',
+    iconCls: 'text-amber-500',
+    bgCls: 'bg-amber-50 dark:bg-amber-500/12 ring-amber-200 dark:ring-amber-700/40',
+    badgeCls: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
+  },
+  opportunity: {
+    icon: SparklesIcon,
+    label: '机会',
+    iconCls: 'text-emerald-500',
+    bgCls: 'bg-emerald-50 dark:bg-emerald-500/12 ring-emerald-200 dark:ring-emerald-700/40',
+    badgeCls: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300',
+  },
 }
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
-    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">市场异动</h3>
-    <ul class="space-y-4">
-      <li v-for="a in anomalies" :key="a.id" class="flex gap-3">
-        <div class="mt-1.5 flex-shrink-0">
-          <span :class="['w-2.5 h-2.5 rounded-full block', SEVERITY_DOT[a.severity]]" />
+  <div class="rounded-xl bg-[color:var(--color-surface)] border border-[color:var(--color-border)] shadow-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">市场异动</h3>
+      <span class="text-xs text-neutral-400">最近 {{ anomalies.length }} 条</span>
+    </div>
+    <ul v-if="anomalies.length" class="space-y-3">
+      <li
+        v-for="a in anomalies"
+        :key="a.id"
+        class="flex gap-3 p-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]/40 hover:bg-[color:var(--color-surface-muted)] transition-colors"
+      >
+        <div :class="['w-8 h-8 rounded-lg ring-1 flex items-center justify-center flex-shrink-0', SEVERITY_META[a.severity]?.bgCls]">
+          <component :is="SEVERITY_META[a.severity]?.icon" :class="['w-4 h-4', SEVERITY_META[a.severity]?.iconCls]" />
         </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2 mb-0.5">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ a.title }}</span>
-            <span :class="['text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0', SEVERITY_BADGE[a.severity]]">
-              {{ SEVERITY_LABELS[a.severity] }}
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+            <span class="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{{ a.title }}</span>
+            <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0', SEVERITY_META[a.severity]?.badgeCls]">
+              {{ SEVERITY_META[a.severity]?.label }}
             </span>
           </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ a.description }}</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ a.occurredAt }} · {{ a.source }}</p>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">{{ a.description }}</p>
+          <p class="text-[11px] text-neutral-400 mt-1.5">{{ a.occurredAt }} · {{ a.source }}</p>
         </div>
       </li>
     </ul>
-    <div v-if="!anomalies.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">暂无异动事件</div>
+    <div v-else class="py-10 text-center text-sm text-neutral-400">暂无异动事件</div>
   </div>
 </template>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

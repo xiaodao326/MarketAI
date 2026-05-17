@@ -23,43 +23,43 @@ const routes: RouteRecordRaw[] = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
-    meta: { title: '仪表盘', requiresAuth: true },
+    meta: { title: '工作台', requiresAuth: true, breadcrumb: ['工作台'] },
   },
   {
     path: '/projects',
     name: 'projects',
     component: () => import('@/views/ProjectsView.vue'),
-    meta: { title: '项目列表', requiresAuth: true },
+    meta: { title: '项目列表', requiresAuth: true, breadcrumb: ['项目'] },
   },
   {
     path: '/projects/:id',
     name: 'project-detail',
     component: () => import('@/views/ProjectDetailView.vue'),
-    meta: { title: '项目详情', requiresAuth: true },
+    meta: { title: '项目详情', requiresAuth: true, breadcrumb: ['项目', ':project'] },
   },
   {
     path: '/projects/:id/dashboard',
     name: 'project-dashboard',
     component: () => import('@/views/dashboard/DashboardView.vue'),
-    meta: { title: '趋势仪表盘', requiresAuth: true },
+    meta: { title: '趋势仪表盘', requiresAuth: true, breadcrumb: ['项目', ':project', '趋势仪表盘'] },
   },
   {
     path: '/projects/:id/insights',
     name: 'project-insights',
     component: () => import('@/views/insights/InsightView.vue'),
-    meta: { title: 'AI 需求洞察', requiresAuth: true },
+    meta: { title: 'AI 需求洞察', requiresAuth: true, breadcrumb: ['项目', ':project', 'AI 需求洞察'] },
   },
   {
     path: '/projects/:id/personas',
     name: 'project-personas',
     component: () => import('@/views/personas/PersonaView.vue'),
-    meta: { title: '用户画像', requiresAuth: true },
+    meta: { title: '用户画像', requiresAuth: true, breadcrumb: ['项目', ':project', '用户画像'] },
   },
   {
     path: '/projects/:id/competitors',
     name: 'project-competitors',
     component: () => import('@/views/competitors/CompetitorView.vue'),
-    meta: { title: '竞品分析', requiresAuth: true },
+    meta: { title: '竞品分析', requiresAuth: true, breadcrumb: ['项目', ':project', '竞品分析'] },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -77,10 +77,8 @@ const router = createRouter({
 
 // 路由守卫：认证检查
 router.beforeEach((to, _from, next) => {
-  // 设置页面标题
-  document.title = `${to.meta.title || 'MarketAI'} - MarketAI`
+  document.title = `${to.meta.title || 'MarketAI'} · MarketAI`
 
-  // Pinia 在 app.use 之后才可用，需要在这里获取 store
   const userStore = useUserStore()
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {

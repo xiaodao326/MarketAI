@@ -4,16 +4,20 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useProjectStore } from '@/stores/project'
 import {
-  PlusIcon, ArrowRightIcon, FolderIcon,
-  ChartBarIcon, LightBulbIcon, UserGroupIcon, BuildingOffice2Icon,
+  PlusIcon, ArrowRightIcon, FolderIcon, FolderOpenIcon, ArchiveBoxIcon, PencilSquareIcon,
+  ChartBarIcon, LightBulbIcon, UserGroupIcon, BuildingOffice2Icon, SparklesIcon,
 } from '@heroicons/vue/24/outline'
 import type { Project } from '@/types/project'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
+import AppEmpty from '@/components/ui/AppEmpty.vue'
+import AppSkeleton from '@/components/ui/AppSkeleton.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const projectStore = useProjectStore()
 
-// 加载最近 6 个项目用于首页展示
 onMounted(() => {
   if (projectStore.projectList.length === 0) {
     projectStore.fetchList({ size: 6 }).catch(() => {})
@@ -32,26 +36,22 @@ const stats = computed(() => {
   }
 })
 
-const statusBadge = (status: number) => {
-  switch (status) {
-    case 0: return { label: '草稿', cls: 'bg-gray-100 text-gray-600' }
-    case 1: return { label: '活跃', cls: 'bg-green-100 text-green-700' }
-    case 2: return { label: '归档', cls: 'bg-yellow-100 text-yellow-700' }
-    default: return { label: '未知', cls: 'bg-gray-100 text-gray-600' }
-  }
-}
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6)  return '夜深了'
+  if (h < 12) return '早上好'
+  if (h < 14) return '中午好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+})
 
-const industryClass = (industry: string) => {
-  const map: Record<string, string> = {
-    '企业服务': 'bg-blue-100 text-blue-700',
-    '电商零售': 'bg-orange-100 text-orange-700',
-    '金融':     'bg-purple-100 text-purple-700',
-    '医疗':     'bg-green-100 text-green-700',
-    '教育':     'bg-yellow-100 text-yellow-700',
-    '制造':     'bg-gray-100 text-gray-700',
-    SaaS:       'bg-blue-100 text-blue-700',
+const statusBadge = (status: number): { label: string; tone: 'neutral' | 'success' | 'warning' } => {
+  switch (status) {
+    case 0: return { label: '草稿', tone: 'neutral' }
+    case 1: return { label: '活跃', tone: 'success' }
+    case 2: return { label: '归档', tone: 'warning' }
+    default: return { label: '未知', tone: 'neutral' }
   }
-  return map[industry] || 'bg-gray-100 text-gray-700'
 }
 
 function goToDetail(project: Project) {
@@ -59,162 +59,151 @@ function goToDetail(project: Project) {
   router.push(`/projects/${project.id}`)
 }
 
-// 4 个能力快捷入口 — 引导用户认识可用功能
+const STAT_CARDS = computed(() => [
+  { key: 'total',    label: '全部项目', value: stats.value.total,    icon: FolderIcon,      iconBg: 'from-brand-500/15 to-brand-500/5',     iconColor: 'text-brand-600' },
+  { key: 'active',   label: '活跃中',   value: stats.value.active,   icon: FolderOpenIcon,  iconBg: 'from-emerald-500/15 to-emerald-500/5', iconColor: 'text-emerald-600' },
+  { key: 'draft',    label: '草稿',     value: stats.value.draft,    icon: PencilSquareIcon, iconBg: 'from-sky-500/15 to-sky-500/5',         iconColor: 'text-sky-600' },
+  { key: 'archived', label: '已归档',   value: stats.value.archived, icon: ArchiveBoxIcon,  iconBg: 'from-amber-500/15 to-amber-500/5',     iconColor: 'text-amber-600' },
+])
+
 const FEATURE_SHORTCUTS = [
-  { label: '趋势仪表盘', icon: ChartBarIcon,         iconCls: 'text-blue-500',    desc: '搜索热度 / 社媒讨论' },
-  { label: 'AI 需求洞察', icon: LightBulbIcon,       iconCls: 'text-amber-500',   desc: '痛点 / 机会 / 风险' },
-  { label: '用户画像',   icon: UserGroupIcon,        iconCls: 'text-purple-500',  desc: '3-5 个目标画像' },
-  { label: '竞品分析',   icon: BuildingOffice2Icon,  iconCls: 'text-emerald-500', desc: '对比矩阵 / 差异化' },
+  { label: '趋势仪表盘',  icon: ChartBarIcon,         iconColor: 'text-sky-500',     iconBg: 'bg-sky-50 dark:bg-sky-500/10',         desc: '搜索热度 / 社媒讨论' },
+  { label: 'AI 需求洞察', icon: LightBulbIcon,        iconColor: 'text-amber-500',   iconBg: 'bg-amber-50 dark:bg-amber-500/10',     desc: '痛点 / 机会 / 风险' },
+  { label: '用户画像',    icon: UserGroupIcon,        iconColor: 'text-purple-500',  iconBg: 'bg-purple-50 dark:bg-purple-500/10',   desc: '3–5 个目标画像' },
+  { label: '竞品分析',    icon: BuildingOffice2Icon,  iconColor: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/10', desc: '对比矩阵 / 差异化' },
 ]
 </script>
 
 <template>
-  <div>
+  <div class="max-w-[1400px] mx-auto">
     <!-- 欢迎横栏 -->
-    <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
-      <div>
-        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
-          欢迎，{{ userStore.userInfo?.nickname || '用户' }}
-        </h2>
-        <p class="text-gray-500 dark:text-gray-400 mt-1">AI 驱动的市场需求分析平台</p>
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-7">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400 font-medium mb-1.5">
+          <SparklesIcon class="w-4 h-4" />
+          <span>{{ greeting }}</span>
+        </div>
+        <h1 class="text-[28px] font-bold tracking-tight text-neutral-900 dark:text-neutral-100 leading-tight">
+          {{ userStore.userInfo?.nickname || '用户' }},欢迎回到 MarketAI
+        </h1>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+          管理你的市场分析项目,获取 AI 驱动的需求洞察与竞品情报。
+        </p>
       </div>
-      <button
+      <AppButton
         v-if="projectStore.hasProjects"
-        class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
+        variant="gradient"
+        size="lg"
         @click="router.push('/projects')"
       >
         <PlusIcon class="w-4 h-4" />新建项目
-      </button>
+      </AppButton>
     </div>
 
     <!-- 加载态 -->
-    <div
-      v-if="projectStore.loading && !projectStore.projectList.length"
-      class="flex justify-center py-20"
-    >
-      <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    <div v-if="projectStore.loading && !projectStore.projectList.length" class="space-y-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <AppCard v-for="i in 4" :key="i">
+          <AppSkeleton height="12px" width="40%" />
+          <AppSkeleton class="mt-3" height="28px" width="60%" />
+        </AppCard>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <AppCard v-for="i in 3" :key="i">
+          <AppSkeleton height="16px" width="70%" />
+          <AppSkeleton class="mt-3" height="12px" width="40%" />
+          <AppSkeleton class="mt-4" :rows="2" height="10px" />
+        </AppCard>
+      </div>
     </div>
 
-    <!-- 空态:无项目 -->
-    <div
-      v-else-if="!projectStore.hasProjects"
-      class="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-12 text-center"
-    >
-      <FolderIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-        创建第一个分析项目
-      </h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-        选择一个市场关键词，AI 将自动分析市场趋势、竞争格局和目标用户画像，生成深度洞察报告。
-      </p>
-      <button
-        class="px-6 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
-        @click="router.push('/projects')"
+    <!-- 空态 -->
+    <AppCard v-else-if="!projectStore.hasProjects" padding="lg" class="text-center">
+      <AppEmpty
+        :icon="FolderOpenIcon"
+        size="lg"
+        title="创建你的第一个分析项目"
+        description="输入目标市场关键词,AI 将自动分析市场趋势、竞争格局和目标用户画像,生成深度洞察报告。"
       >
-        开始新项目
-      </button>
-    </div>
+        <template #action>
+          <AppButton variant="gradient" size="lg" @click="router.push('/projects')">
+            <PlusIcon class="w-4 h-4" />开始第一个项目
+          </AppButton>
+        </template>
+      </AppEmpty>
+    </AppCard>
 
-    <!-- 主内容:有项目 -->
+    <!-- 主内容 -->
     <template v-else>
       <!-- 统计卡片 -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            全部项目
-          </p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
-            {{ stats.total }}
-          </p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            活跃中
-          </p>
-          <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-            {{ stats.active }}
-          </p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            草稿
-          </p>
-          <p class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mt-1">
-            {{ stats.draft }}
-          </p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            已归档
-          </p>
-          <p class="text-2xl font-semibold text-yellow-600 dark:text-yellow-400 mt-1">
-            {{ stats.archived }}
-          </p>
-        </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+        <AppCard v-for="s in STAT_CARDS" :key="s.key" class="overflow-hidden relative">
+          <div :class="['absolute -right-4 -top-4 w-24 h-24 rounded-full bg-gradient-to-br opacity-60', s.iconBg]"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{{ s.label }}</p>
+              <component :is="s.icon" :class="['w-4 h-4', s.iconColor]" />
+            </div>
+            <p class="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mt-3 tabular-nums">{{ s.value }}</p>
+          </div>
+        </AppCard>
       </div>
 
       <!-- 最近项目 -->
-      <div class="mb-6">
-        <div class="flex items-baseline justify-between mb-3">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-            最近项目
-          </h3>
+      <div class="mb-7">
+        <div class="flex items-end justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">最近项目</h2>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">点击卡片进入项目详情</p>
+          </div>
           <button
-            class="inline-flex items-center gap-0.5 text-sm text-primary-600 hover:text-primary-700 transition-colors"
+            class="inline-flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
             @click="router.push('/projects')"
           >
             查看全部<ArrowRightIcon class="w-3.5 h-3.5" />
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <AppCard
             v-for="project in recentProjects"
             :key="project.id"
-            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:shadow-md hover:border-primary-200 dark:hover:border-primary-700 transition-all"
+            hoverable
             @click="goToDetail(project)"
           >
             <div class="flex items-start justify-between mb-3 gap-2">
-              <h4 class="font-medium text-gray-900 dark:text-white truncate flex-1">
-                {{ project.name }}
-              </h4>
-              <span :class="['px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0', statusBadge(project.status).cls]">{{ statusBadge(project.status).label }}</span>
+              <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate flex-1 text-[15px]">{{ project.name }}</h3>
+              <AppBadge :tone="statusBadge(project.status).tone" dot>{{ statusBadge(project.status).label }}</AppBadge>
             </div>
-            <div class="flex items-center gap-2 mb-3 flex-wrap">
-              <span :class="['px-2 py-0.5 text-xs rounded-full', industryClass(project.industry)]">{{ project.industry }}</span>
-              <span class="text-xs text-gray-400">{{ project.targetMarket }}</span>
+            <div class="flex items-center gap-2 mb-4 flex-wrap">
+              <AppBadge tone="brand" outline>{{ project.industry }}</AppBadge>
+              <span class="text-xs text-neutral-400 truncate">{{ project.targetMarket }}</span>
             </div>
-            <div class="flex items-center justify-between text-xs text-gray-400">
-              <span>{{ project.keywords?.length || 0 }} 个关键词 · {{ project.competitors?.length || 0 }} 个竞品</span>
+            <div class="pt-3 border-t border-[color:var(--color-border)] flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+              <span>{{ project.keywords?.length || 0 }} 关键词 · {{ project.competitors?.length || 0 }} 竞品</span>
               <span>{{ new Date(project.createdAt).toLocaleDateString('zh-CN') }}</span>
             </div>
-          </div>
+          </AppCard>
         </div>
       </div>
 
       <!-- 能力快捷入口 -->
       <div>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">
-          可用能力
-        </h3>
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">可用能力</h2>
+          <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">每个项目都可以使用以下分析能力</p>
+        </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div
-            v-for="f in FEATURE_SHORTCUTS"
-            :key="f.label"
-            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3"
-          >
-            <component
-              :is="f.icon"
-              :class="['w-8 h-8 flex-shrink-0', f.iconCls]"
-            />
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {{ f.label }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {{ f.desc }}
-              </p>
+          <AppCard v-for="f in FEATURE_SHORTCUTS" :key="f.label" hoverable padding="sm">
+            <div class="flex items-center gap-3">
+              <div :class="['w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', f.iconBg]">
+                <component :is="f.icon" :class="['w-5 h-5', f.iconColor]" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{{ f.label }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">{{ f.desc }}</p>
+              </div>
             </div>
-          </div>
+          </AppCard>
         </div>
       </div>
     </template>
