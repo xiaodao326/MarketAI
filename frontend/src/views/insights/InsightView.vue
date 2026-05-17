@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { insightApi } from '@/api/insight'
 import {
-  ArrowLeftIcon, PlusIcon, ArrowDownTrayIcon, ArrowPathIcon,
+  PlusIcon, ArrowDownTrayIcon, ArrowPathIcon,
   LightBulbIcon, ClockIcon,
 } from '@heroicons/vue/24/outline'
 import MarketFitScoreRing from '@/components/insights/MarketFitScoreRing.vue'
@@ -14,6 +14,12 @@ import RiskList from '@/components/insights/RiskList.vue'
 import ActionList from '@/components/insights/ActionList.vue'
 import CreateInsightModal from '@/components/insights/CreateInsightModal.vue'
 import AskAIModal from '@/components/insights/AskAIModal.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppEmpty from '@/components/ui/AppEmpty.vue'
+import AppSkeleton from '@/components/ui/AppSkeleton.vue'
+import { toast } from '@/utils/feedback'
 import type { InsightReport, InsightReportSummary, PainPoint, Opportunity } from '@/types/insight'
 
 const route = useRoute()
@@ -34,17 +40,15 @@ const detailError = ref<string | null>(null)
 const showCreateModal = ref(false)
 const askContext = ref<{ title: string; context: string } | null>(null)
 
-// 评分颜色 — 与环形组件保持一致
 function scoreColor(score: number) {
-  if (score >= 80) return 'text-emerald-500'
-  if (score >= 60) return 'text-blue-500'
-  if (score >= 40) return 'text-amber-500'
-  return 'text-red-500'
+  if (score >= 80) return 'text-emerald-600 dark:text-emerald-400'
+  if (score >= 60) return 'text-brand-600 dark:text-brand-400'
+  if (score >= 40) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
 }
 
 function formatDate(s: string) {
   if (!s) return ''
-  // 后端可能返回 'yyyy-MM-dd HH:mm:ss' 或 ISO,做兼容处理
   const d = new Date(s.replace(' ', 'T'))
   if (isNaN(d.getTime())) return s
   return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -56,7 +60,6 @@ async function loadList() {
   try {
     const page = await insightApi.getReportList(projectId.value, 1, 50)
     reports.value = page.records || []
-    // 默认选中第一个
     if (reports.value.length && !selectedId.value) {
       selectedId.value = reports.value[0].id
     } else if (!reports.value.length) {
@@ -96,10 +99,12 @@ function exportJson() {
   a.download = `insight-report-${currentReport.value.id}.json`
   a.click()
   URL.revokeObjectURL(url)
+  toast.success('报告已导出')
 }
 
 async function handleCompleted(reportId: number) {
   showCreateModal.value = false
+  toast.success('分析报告已生成')
   await loadList()
   selectedId.value = reportId
 }
@@ -129,81 +134,45 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <!-- 顶部工具栏 -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div class="flex items-center gap-3">
-        <button
-          class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          title="返回项目"
-          @click="router.push(`/projects/${projectId}`)"
-        >
-          <ArrowLeftIcon class="w-5 h-5" />
-        </button>
-        <div>
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <LightBulbIcon class="w-5 h-5 text-primary-500" />AI 需求洞察
-          </h1>
-          <p
-            v-if="project"
-            class="text-sm text-gray-500 dark:text-gray-400"
-          >
-            {{ project.name }}
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button
-          v-if="currentReport"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          @click="exportJson"
-        >
+  <div class="max-w-[1400px] mx-auto">
+    <PageHeader title="AI 需求洞察" backable @back="router.push(`/projects/${projectId}`)">
+      <template #subtitle>
+        <span v-if="project">{{ project.name }} · 一键生成结构化市场分析报告</span>
+        <span v-else>一键生成结构化市场分析报告</span>
+      </template>
+      <template #actions>
+        <AppButton v-if="currentReport" variant="secondary" @click="exportJson">
           <ArrowDownTrayIcon class="w-4 h-4" />导出 JSON
-        </button>
-        <button
-          class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-          @click="showCreateModal = true"
-        >
+        </AppButton>
+        <AppButton variant="gradient" @click="showCreateModal = true">
           <PlusIcon class="w-4 h-4" />新建分析
-        </button>
-      </div>
-    </div>
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <!-- 移动端:历史报告下拉 -->
     <div class="md:hidden mb-4">
-      <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">历史报告 ({{ reports.length }})</label>
+      <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">历史报告 ({{ reports.length }})</label>
       <select
         v-model="selectedId"
-        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white"
+        class="w-full px-3.5 py-2.5 rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
       >
-        <option
-          v-if="!reports.length"
-          :value="null"
-        >
-          暂无报告
-        </option>
-        <option
-          v-for="r in reports"
-          :key="r.id"
-          :value="r.id"
-        >
+        <option v-if="!reports.length" :value="null">暂无报告</option>
+        <option v-for="r in reports" :key="r.id" :value="r.id">
           {{ r.title }} · {{ formatDate(r.createdAt) }}
         </option>
       </select>
     </div>
 
-    <div class="flex flex-col md:flex-row gap-6">
-      <!-- 侧边栏(桌面端) -->
-      <aside class="hidden md:block w-1/4 flex-shrink-0">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              历史报告
-            </h3>
+    <div class="flex flex-col md:flex-row gap-5">
+      <!-- 侧边栏(桌面) -->
+      <aside class="hidden md:block w-72 flex-shrink-0">
+        <AppCard padding="sm">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">历史报告</h3>
             <button
               :disabled="listLoading"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              class="text-neutral-400 hover:text-brand-600 transition-colors"
               title="刷新"
               @click="loadList"
             >
@@ -211,140 +180,101 @@ onMounted(async () => {
             </button>
           </div>
 
-          <p
-            v-if="listError"
-            class="text-xs text-red-500"
-          >
-            {{ listError }}
-          </p>
+          <p v-if="listError" class="text-xs text-red-500 px-1">{{ listError }}</p>
 
-          <div
-            v-if="!reports.length && !listLoading"
-            class="text-center py-8"
-          >
-            <LightBulbIcon class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-            <p class="text-xs text-gray-400">
-              还没有分析报告
-            </p>
-            <p class="text-xs text-gray-400 mt-0.5">
-              点击"新建分析"开始
-            </p>
+          <div v-if="!reports.length && !listLoading" class="text-center py-8">
+            <LightBulbIcon class="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+            <p class="text-xs text-neutral-400">还没有分析报告</p>
+            <p class="text-xs text-neutral-400 mt-0.5">点击"新建分析"开始</p>
           </div>
 
-          <ul class="space-y-2 max-h-[600px] overflow-y-auto">
+          <ul class="space-y-1 max-h-[640px] overflow-y-auto">
             <li
               v-for="r in reports"
               :key="r.id"
               :class="[
-                'p-3 rounded-lg cursor-pointer transition-colors border',
+                'relative pl-3 pr-3 py-2.5 rounded-lg cursor-pointer transition-all',
                 selectedId === r.id
-                  ? 'border-primary-300 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-700'
-                  : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700',
+                  ? 'bg-brand-50 dark:bg-brand-500/12 text-brand-900 dark:text-brand-100'
+                  : 'hover:bg-[color:var(--color-surface-muted)]',
               ]"
               @click="selectReport(r.id)"
             >
+              <span v-if="selectedId === r.id" class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-brand-500 rounded-r"></span>
               <div class="flex items-start justify-between gap-2 mb-1">
-                <h4 class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
-                  {{ r.title }}
-                </h4>
-                <span :class="['text-sm font-semibold flex-shrink-0', scoreColor(r.marketFitScore || 0)]">
+                <h4 class="text-sm font-medium text-neutral-900 dark:text-neutral-100 line-clamp-2 flex-1">{{ r.title }}</h4>
+                <span :class="['text-sm font-bold tabular-nums flex-shrink-0', scoreColor(r.marketFitScore || 0)]">
                   {{ r.marketFitScore || '--' }}
                 </span>
               </div>
-              <div class="flex items-center gap-1 text-xs text-gray-400">
+              <div class="flex items-center gap-1 text-xs text-neutral-400">
                 <ClockIcon class="w-3 h-3" />
                 <span>{{ formatDate(r.completedAt || r.createdAt) }}</span>
               </div>
             </li>
           </ul>
-        </div>
+        </AppCard>
       </aside>
 
-      <!-- 主内容区 -->
+      <!-- 主内容 -->
       <main class="flex-1 min-w-0">
         <!-- 空态 -->
-        <div
-          v-if="!selectedId && !listLoading"
-          class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-16 text-center"
-        >
-          <LightBulbIcon class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
-            还没有分析报告
-          </p>
-          <button
-            class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-            @click="showCreateModal = true"
+        <AppCard v-if="!selectedId && !listLoading" padding="lg">
+          <AppEmpty
+            :icon="LightBulbIcon"
+            size="lg"
+            title="还没有分析报告"
+            description="点击右上角『新建分析』,让 AI 为你生成结构化的市场洞察报告"
           >
-            <PlusIcon class="w-4 h-4" />开始第一次分析
-          </button>
-        </div>
+            <template #action>
+              <AppButton variant="gradient" size="lg" @click="showCreateModal = true">
+                <PlusIcon class="w-4 h-4" />开始第一次分析
+              </AppButton>
+            </template>
+          </AppEmpty>
+        </AppCard>
 
-        <!-- 骨架屏 -->
-        <div
-          v-else-if="detailLoading && !currentReport"
-          class="space-y-4"
-        >
-          <div class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-44" />
-          <div class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-64" />
+        <!-- 骨架 -->
+        <div v-else-if="detailLoading && !currentReport" class="space-y-4">
+          <AppCard padding="lg">
+            <div class="flex items-center gap-8">
+              <AppSkeleton width="160px" height="160px" rounded="full" />
+              <div class="flex-1 space-y-3">
+                <AppSkeleton :rows="4" height="14px" />
+              </div>
+            </div>
+          </AppCard>
+          <AppCard padding="lg"><AppSkeleton :rows="4" height="20px" /></AppCard>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-56" />
-            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-56" />
+            <AppCard padding="lg"><AppSkeleton :rows="3" /></AppCard>
+            <AppCard padding="lg"><AppSkeleton :rows="3" /></AppCard>
           </div>
         </div>
 
         <!-- 错误 -->
         <div
           v-else-if="detailError"
-          class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-5 flex items-center justify-between"
+          class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/40 rounded-lg p-4 flex items-center justify-between"
         >
-          <p class="text-red-600 dark:text-red-400 text-sm">
-            {{ detailError }}
-          </p>
-          <button
-            class="ml-4 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors flex-shrink-0"
-            @click="selectedId && loadDetail(selectedId)"
-          >
-            重试
-          </button>
+          <p class="text-sm text-red-700 dark:text-red-300">{{ detailError }}</p>
+          <AppButton variant="danger" size="sm" @click="selectedId && loadDetail(selectedId)">重试</AppButton>
         </div>
 
         <!-- 报告详情 -->
-        <div
-          v-else-if="currentReport"
-          class="space-y-4"
-        >
-          <!-- 标题元数据 -->
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div v-else-if="currentReport" class="space-y-4">
+          <div class="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ currentReport.title }}
-              </h2>
-              <p class="text-xs text-gray-400 mt-0.5">
+              <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ currentReport.title }}</h2>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 {{ currentReport.aiModel }} · {{ currentReport.tokensUsed?.toLocaleString() }} tokens ·
                 {{ formatDate(currentReport.completedAt || currentReport.createdAt) }}
               </p>
             </div>
           </div>
 
-          <!-- 契合度评分环 + 4 维度 -->
-          <MarketFitScoreRing
-            :score="currentReport.marketFitScore"
-            :dimensions="currentReport.dimensions"
-          />
-
-          <!-- 痛点 -->
-          <PainPointList
-            :pain-points="currentReport.painPoints || []"
-            @ask="openAskForPain"
-          />
-
-          <!-- 机会矩阵 -->
-          <OpportunityGrid
-            :opportunities="currentReport.opportunities || []"
-            @ask="openAskForOpp"
-          />
-
-          <!-- 风险 + 行动 -->
+          <MarketFitScoreRing :score="currentReport.marketFitScore" :dimensions="currentReport.dimensions" />
+          <PainPointList :pain-points="currentReport.painPoints || []" @ask="openAskForPain" />
+          <OpportunityGrid :opportunities="currentReport.opportunities || []" @ask="openAskForOpp" />
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RiskList :risks="currentReport.risks || []" />
             <ActionList :actions="currentReport.actions || []" />
@@ -368,3 +298,12 @@ onMounted(async () => {
     />
   </div>
 </template>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

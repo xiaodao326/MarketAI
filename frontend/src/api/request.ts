@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { ApiResponse } from '@/types'
+import { toast } from '@/utils/feedback'
 
 const instance: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
@@ -17,6 +18,8 @@ instance.interceptors.request.use((config) => {
   return config
 })
 
+let sessionExpiredNotified = false
+
 // 响应拦截器 — 统一处理业务错误和 401/403
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
@@ -27,14 +30,25 @@ instance.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const status = error.response?.status
+
+    if (status === 401 || status === 403) {
       localStorage.removeItem('marketai_token')
       localStorage.removeItem('marketai_user')
-      // 防止重定向循环: 如果已在登录页则不跳转
+      // 防止登录页内的接口请求触发重定向循环;同时避免连续刷新出现多条 toast
       if (window.location.pathname !== '/login') {
+        if (!sessionExpiredNotified) {
+          sessionExpiredNotified = true
+          toast.warning('登录状态已失效,请重新登录')
+          setTimeout(() => { sessionExpiredNotified = false }, 3000)
+        }
         window.location.href = '/login'
       }
+    } else if (!error.response) {
+      // 网络层错误(超时、断网)主动提示;业务错误留给调用方 catch
+      toast.error(error.message || '网络异常,请检查连接')
     }
+
     return Promise.reject(error)
   },
 )

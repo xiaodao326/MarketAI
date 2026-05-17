@@ -5,13 +5,19 @@ import { useProjectStore } from '@/stores/project'
 import { competitorApi } from '@/api/competitor'
 import { useCompetitorAnalysis } from '@/composables/useCompetitorAnalysis'
 import {
-  ArrowLeftIcon, BuildingOffice2Icon, SparklesIcon, PlusIcon, ArrowPathIcon,
+  BuildingOffice2Icon, SparklesIcon, PlusIcon, ArrowPathIcon,
   ExclamationCircleIcon, CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import CompetitorCard from '@/components/competitors/CompetitorCard.vue'
 import FeatureMatrix from '@/components/competitors/FeatureMatrix.vue'
 import InsightList from '@/components/competitors/InsightList.vue'
 import AddCompetitorModal from '@/components/competitors/AddCompetitorModal.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppEmpty from '@/components/ui/AppEmpty.vue'
+import AppSkeleton from '@/components/ui/AppSkeleton.vue'
+import { toast } from '@/utils/feedback'
 import type { Competitor, FeatureMatrix as FeatureMatrixT, DifferentiationInsight } from '@/types/competitor'
 
 const route = useRoute()
@@ -34,7 +40,6 @@ const {
   error: taskError, displayProgress, reset,
 } = useCompetitorAnalysis()
 
-// 项目尚未配置竞品名单则禁用 AI 分析按钮
 const competitorNamesFromProject = computed(() => project.value?.competitors || [])
 const canAnalyze = computed(() => competitorNamesFromProject.value.length > 0 && !isPolling.value)
 
@@ -62,13 +67,13 @@ async function startAnalysis() {
   try {
     await createTask({ projectId: projectId.value })
   } catch {
-    // 错误已在 composable 中
+    // 错误已在 composable
   }
 }
 
-// 分析完成后,刷新数据 + 延迟关闭进度条
 watch(isCompleted, async (done) => {
   if (done) {
+    toast.success('竞品分析完成')
     await loadAll()
     setTimeout(reset, 800)
   }
@@ -76,7 +81,6 @@ watch(isCompleted, async (done) => {
 
 async function handleAdded() {
   showAddModal.value = false
-  // 刷新项目以拿到最新 competitors 列表
   await projectStore.fetchDetail(projectId.value)
 }
 
@@ -94,187 +98,138 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <!-- 顶部工具栏 -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div class="flex items-center gap-3">
-        <button
-          class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          title="返回项目"
-          @click="router.push(`/projects/${projectId}`)"
-        >
-          <ArrowLeftIcon class="w-5 h-5" />
-        </button>
-        <div>
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <BuildingOffice2Icon class="w-5 h-5 text-emerald-500" />竞品分析
-          </h1>
-          <p
-            v-if="project"
-            class="text-sm text-gray-500 dark:text-gray-400"
-          >
-            {{ project.name }} · 配置 {{ competitorNamesFromProject.length }} 个竞品 · 已分析 {{ competitors.length }} 个
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
+  <div class="max-w-[1400px] mx-auto">
+    <PageHeader title="竞品分析" backable @back="router.push(`/projects/${projectId}`)">
+      <template #subtitle>
+        <span v-if="project">
+          {{ project.name }} · 配置 {{ competitorNamesFromProject.length }} 个竞品 · 已分析 {{ competitors.length }} 个
+        </span>
+        <span v-else>AI 自动生成功能对比矩阵与差异化建议</span>
+      </template>
+      <template #actions>
         <button
           :disabled="loading"
-          class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-40"
+          class="w-9 h-9 inline-flex items-center justify-center rounded-md border border-[color:var(--color-border)] text-neutral-500 hover:text-brand-600 hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors disabled:opacity-40"
           title="刷新"
           @click="loadAll"
         >
-          <ArrowPathIcon :class="['w-5 h-5', loading && 'animate-spin']" />
+          <ArrowPathIcon :class="['w-4 h-4', loading && 'animate-spin']" />
         </button>
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          @click="showAddModal = true"
-        >
+        <AppButton variant="secondary" @click="showAddModal = true">
           <PlusIcon class="w-4 h-4" />添加竞品
-        </button>
-        <button
+        </AppButton>
+        <AppButton
+          variant="gradient"
           :disabled="!canAnalyze"
           :title="competitorNamesFromProject.length === 0 ? '请先添加竞品后再分析' : '触发 AI 分析'"
-          class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           @click="startAnalysis"
         >
           <SparklesIcon class="w-4 h-4" />AI 分析
-        </button>
-      </div>
-    </div>
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <!-- 任务进度横幅 -->
-    <div
-      v-if="taskStatus && !taskError"
-      class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4 mb-6 flex items-center gap-4"
-    >
-      <CheckCircleIcon
-        v-if="isCompleted"
-        class="w-6 h-6 text-emerald-500 flex-shrink-0"
-      />
-      <ArrowPathIcon
-        v-else
-        class="w-6 h-6 text-primary-500 animate-spin flex-shrink-0"
-      />
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-gray-900 dark:text-white">
-          {{ isCompleted ? '竞品分析完成' : '正在分析竞品…' }}
-        </p>
-        <div class="mt-1.5 h-1.5 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            class="h-full bg-primary-500 transition-all duration-500"
-            :style="{ width: `${displayProgress}%` }"
-          />
+    <transition name="fade">
+      <div
+        v-if="taskStatus && !taskError"
+        class="rounded-xl bg-gradient-to-r from-brand-50 to-purple-50 dark:from-brand-500/10 dark:to-purple-500/10 border border-brand-200 dark:border-brand-700/40 p-4 mb-5 flex items-center gap-4"
+      >
+        <div class="w-10 h-10 rounded-lg bg-brand-gradient flex items-center justify-center flex-shrink-0 shadow-glow">
+          <CheckCircleIcon v-if="isCompleted" class="w-5 h-5 text-white" />
+          <ArrowPathIcon v-else class="w-5 h-5 text-white animate-spin" />
         </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+            {{ isCompleted ? '竞品分析完成' : '正在分析竞品…' }}
+          </p>
+          <div class="mt-2 h-1.5 bg-white/60 dark:bg-neutral-800 rounded-full overflow-hidden">
+            <div class="h-full bg-brand-gradient transition-all duration-500" :style="{ width: `${displayProgress}%` }" />
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-neutral-700 dark:text-neutral-200 tabular-nums flex-shrink-0">{{ displayProgress }}%</span>
       </div>
-      <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{{ displayProgress }}%</span>
-    </div>
+    </transition>
 
     <div
-      v-else-if="taskError"
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-center justify-between"
+      v-if="taskError"
+      class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/40 rounded-lg p-4 mb-5 flex items-center justify-between"
     >
       <div class="flex items-center gap-3">
-        <ExclamationCircleIcon class="w-5 h-5 text-red-500" />
-        <p class="text-sm text-red-600 dark:text-red-400">
-          {{ taskError }}
-        </p>
+        <ExclamationCircleIcon class="w-5 h-5 text-red-500 flex-shrink-0" />
+        <p class="text-sm text-red-700 dark:text-red-300">{{ taskError }}</p>
       </div>
-      <button
-        class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-        @click="startAnalysis"
-      >
-        重新分析
-      </button>
+      <AppButton variant="danger" size="sm" @click="startAnalysis">重新分析</AppButton>
     </div>
 
     <!-- 加载错误 -->
     <div
       v-if="error"
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-5 flex items-center justify-between mb-6"
+      class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/40 rounded-lg p-4 flex items-center justify-between mb-5"
     >
-      <p class="text-red-600 dark:text-red-400 text-sm">
-        {{ error }}
-      </p>
-      <button
-        class="ml-4 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors flex-shrink-0"
-        @click="loadAll"
-      >
-        重试
-      </button>
+      <p class="text-sm text-red-700 dark:text-red-300">{{ error }}</p>
+      <AppButton variant="danger" size="sm" @click="loadAll">重试</AppButton>
     </div>
 
     <!-- 空态:既无配置又无数据 -->
-    <div
-      v-if="!loading && !competitors.length && !competitorNamesFromProject.length"
-      class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-16 text-center"
-    >
-      <BuildingOffice2Icon class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-      <p class="text-gray-500 dark:text-gray-400 text-sm">
-        项目尚未配置竞品名单
-      </p>
-      <button
-        class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-        @click="showAddModal = true"
+    <AppCard v-if="!loading && !competitors.length && !competitorNamesFromProject.length" padding="lg">
+      <AppEmpty
+        :icon="BuildingOffice2Icon"
+        size="lg"
+        title="项目尚未配置竞品名单"
+        description="添加竞品后,可触发 AI 分析自动生成功能对比矩阵和差异化建议"
       >
-        <PlusIcon class="w-4 h-4" />添加第一个竞品
-      </button>
-    </div>
+        <template #action>
+          <AppButton variant="gradient" size="lg" @click="showAddModal = true">
+            <PlusIcon class="w-4 h-4" />添加第一个竞品
+          </AppButton>
+        </template>
+      </AppEmpty>
+    </AppCard>
 
-    <!-- 有配置无数据态 -->
-    <div
-      v-else-if="!loading && !competitors.length && competitorNamesFromProject.length"
-      class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-16 text-center"
-    >
-      <SparklesIcon class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-      <p class="text-gray-500 dark:text-gray-400 text-sm">
-        已配置 {{ competitorNamesFromProject.length }} 个竞品,点击 "AI 分析" 生成对比矩阵
-      </p>
-      <p class="text-xs text-gray-400 mt-1">
-        {{ competitorNamesFromProject.join('、') }}
-      </p>
-    </div>
+    <!-- 有配置无数据 -->
+    <AppCard v-else-if="!loading && !competitors.length && competitorNamesFromProject.length" padding="lg">
+      <AppEmpty
+        :icon="SparklesIcon"
+        size="lg"
+        title="已配置竞品,尚未分析"
+        :description="`已配置 ${competitorNamesFromProject.length} 个竞品:${competitorNamesFromProject.join('、')}`"
+      >
+        <template #action>
+          <AppButton variant="gradient" size="lg" @click="startAnalysis">
+            <SparklesIcon class="w-4 h-4" />立即 AI 分析
+          </AppButton>
+        </template>
+      </AppEmpty>
+    </AppCard>
 
     <!-- 骨架屏 -->
-    <div
-      v-if="loading && !competitors.length && !error"
-      class="space-y-4"
-    >
+    <div v-if="loading && !competitors.length && !error" class="space-y-5">
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-56"
-        />
+        <AppCard v-for="i in 3" :key="i" padding="lg">
+          <div class="flex items-start gap-3">
+            <AppSkeleton width="40px" height="40px" rounded="lg" />
+            <div class="flex-1 space-y-2">
+              <AppSkeleton width="60%" height="14px" />
+              <AppSkeleton width="40%" height="10px" />
+            </div>
+          </div>
+          <AppSkeleton class="mt-4" :rows="4" />
+        </AppCard>
       </div>
-      <div class="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl h-64" />
     </div>
 
     <!-- 主内容 -->
     <template v-else-if="competitors.length">
-      <!-- 竞品卡片网格 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
-        <CompetitorCard
-          v-for="c in competitors"
-          :key="c.id"
-          :competitor="c"
-        />
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-5">
+        <CompetitorCard v-for="c in competitors" :key="c.id" :competitor="c" />
       </div>
 
-      <!-- 功能对比矩阵 -->
-      <div
-        v-if="matrix?.hasReport"
-        class="mb-6"
-      >
+      <div v-if="matrix?.hasReport" class="mb-5">
         <FeatureMatrix :matrix="matrix" />
       </div>
 
-      <!-- AI 差异化建议 -->
-      <InsightList
-        v-if="insights.length"
-        :insights="insights"
-      />
+      <InsightList v-if="insights.length" :insights="insights" />
     </template>
 
     <AddCompetitorModal

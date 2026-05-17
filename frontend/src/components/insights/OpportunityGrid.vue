@@ -1,69 +1,56 @@
 <script setup lang="ts">
 import { ChatBubbleLeftEllipsisIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import type { Opportunity } from '@/types/insight'
+import AppBadge from '@/components/ui/AppBadge.vue'
 
 defineProps<{ opportunities: Opportunity[] }>()
 const emit = defineEmits<{ ask: [op: Opportunity] }>()
 
-const TYPE_MAP: Record<string, { label: string; cls: string }> = {
-  high_value:      { label: '高价值', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-  blue_ocean:      { label: '蓝海', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  differentiation: { label: '差异化', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+const TYPE_MAP: Record<string, { label: string; tone: 'success' | 'info' | 'brand' }> = {
+  high_value:      { label: '高价值', tone: 'success' },
+  blue_ocean:      { label: '蓝海',   tone: 'info' },
+  differentiation: { label: '差异化', tone: 'brand' },
 }
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+  <div class="rounded-xl bg-[color:var(--color-surface)] border border-[color:var(--color-border)] shadow-card p-6">
     <div class="flex items-center gap-2 mb-4">
-      <SparklesIcon class="w-5 h-5 text-emerald-500" />
-      <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-        市场机会
-      </h3>
-      <span class="text-xs text-gray-400">{{ opportunities?.length || 0 }} 项</span>
+      <div class="w-7 h-7 rounded-md bg-emerald-50 dark:bg-emerald-500/12 flex items-center justify-center">
+        <SparklesIcon class="w-4 h-4 text-emerald-500" />
+      </div>
+      <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">市场机会</h3>
+      <span class="text-xs text-neutral-400">{{ opportunities?.length || 0 }} 项</span>
     </div>
 
-    <div
-      v-if="!opportunities?.length"
-      class="text-sm text-gray-400 py-6 text-center"
-    >
-      暂无机会数据
-    </div>
+    <div v-if="!opportunities?.length" class="text-sm text-neutral-400 py-8 text-center">暂无机会数据</div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[480px] overflow-y-auto pr-1">
       <div
         v-for="(op, i) in opportunities"
         :key="i"
-        class="border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:border-primary-200 dark:hover:border-primary-700 transition-colors flex flex-col"
+        class="group rounded-lg border border-[color:var(--color-border)] p-4 bg-[color:var(--color-surface)] hover:border-brand-200 dark:hover:border-brand-700 hover:bg-[color:var(--color-surface-muted)]/40 transition-all flex flex-col"
       >
         <div class="flex items-start justify-between gap-2 mb-2">
-          <span :class="['px-2 py-0.5 text-xs font-medium rounded-full', TYPE_MAP[op.type]?.cls || 'bg-gray-100 text-gray-600']">
+          <AppBadge :tone="TYPE_MAP[op.type]?.tone || 'neutral'">
             {{ TYPE_MAP[op.type]?.label || op.type }}
-          </span>
+          </AppBadge>
           <button
-            class="text-gray-400 hover:text-primary-600 transition-colors"
+            class="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-brand-600 transition-all"
             title="追问 AI"
             @click="emit('ask', op)"
           >
             <ChatBubbleLeftEllipsisIcon class="w-4 h-4" />
           </button>
         </div>
-        <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-1.5">
-          {{ op.name }}
-        </h4>
-        <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
-          {{ op.description }}
-        </p>
-        <div
-          v-if="op.tags?.length"
-          class="mt-2 flex flex-wrap gap-1"
-        >
+        <h4 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1.5">{{ op.name }}</h4>
+        <p class="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed flex-1">{{ op.description }}</p>
+        <div v-if="op.tags?.length" class="mt-2.5 flex flex-wrap gap-1">
           <span
             v-for="(t, idx) in op.tags"
             :key="idx"
-            class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
-          >
-            #{{ t }}
-          </span>
+            class="px-2 py-0.5 text-[11px] bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded"
+          >#{{ t }}</span>
         </div>
       </div>
     </div>
